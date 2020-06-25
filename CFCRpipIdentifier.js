@@ -112,6 +112,7 @@ const metaretriever = async () => {
 
             let metadata = nextitem.metadata; // pipeline metadata
             let pilinesteps = nextitem.spec.steps; // pipeline steps, can ebe null
+            let triggers = nextitem.spec.triggers[0]
 
             let pilinestepNames = _.keys(pilinesteps);
             let pipelinespecTemplate = nextitem.spec.specTemplate;
@@ -151,7 +152,7 @@ const metaretriever = async () => {
 
                             pilinesteps = pilinesteps.steps;
                             pilinestepNames = _.keys(pilinesteps);
-                            await processStespForCFCR(metadata.id, metadata.name, pilinesteps, pilinestepNames, piplineReports);
+                            await processStespForCFCR(metadata.id, metadata.name, pilinesteps, pilinestepNames, pipelinespecTemplate, piplineReports, pipFinalYaml.repoURL || `${pipFinalYaml.repoOwner}/${pipFinalYaml.repoName}`);
 
 
                         } else if (pipFinalYaml.userYamlDescriptor != undefined) {
@@ -163,7 +164,7 @@ const metaretriever = async () => {
 
                             pilinesteps = pilinesteps.steps;
                             pilinestepNames = _.keys(pilinesteps);
-                            await processStespForCFCR(metadata.id, metadata.name, pilinesteps, pilinestepNames, piplineReports);
+                            await processStespForCFCR(metadata.id, metadata.name, pilinesteps, pilinestepNames, pipelinespecTemplate, piplineReports, pipFinalYaml.repoURL || `${pipFinalYaml.repoOwner}/${pipFinalYaml.repoName}`);
 
 
 
@@ -174,7 +175,7 @@ const metaretriever = async () => {
                             reglogger.info(`\n\n Pipeline definition not available through inline or from a last build. Need to go after the repo for this pipeline. ${nextitem.metadata.id} : ${nextitem.metadata.name} \n\n`);
                         }
                     } else {
-
+                        reglogger.info(`\n\n Pipeline has no workflows. ${nextitem.metadata.id} : ${nextitem.metadata.name} \n\n`)
                     }
 
 
@@ -293,7 +294,7 @@ async function getBuildYamlAsJson(yamlString) {
 //test1();
 
 
-async function processStespForCFCR(mid, mname, pilinesteps, pilinestepNames, pipelinespecTemplate, piplineReports) {
+async function processStespForCFCR(mid, mname, pilinesteps, pilinestepNames, pipelinespecTemplate, piplineReports, repoUrl) {
 
     let pullcount = 0;
     let pushcount = 0;
@@ -313,10 +314,13 @@ async function processStespForCFCR(mid, mname, pilinesteps, pilinestepNames, pip
         // "repo": "",
         // "path": "",
         // "revision": "master",
+    } else if (repoUrl) {
+        repoLocation = `repo: ${repoUrl}`
     } else {
 
         repoLocation = "Inline"
     }
+
     _.forEach(pilinestepNames, function (nextpipstep, index) {
 
         // reglogger.info("  ", nextpipstep);
@@ -372,6 +376,8 @@ async function processStespForCFCR(mid, mname, pilinesteps, pilinestepNames, pip
                         piplineReportsG.push(matchedItem)
                         // writenewreocrd(matchedItem);
 
+                    } else if (stepvalue === 'push' && nextStepCode === 'type' && !_.propertyOf(pipvalue)('registry')) {
+                        console.log('blablabla')
                     }
 
             } else {
